@@ -1,10 +1,11 @@
 const { Router } = require('express') //Estamos fazendo a importação o express para poder trabalhar as rotas aqui nesse arquivo
 
+const UserController = require('../controller/userController')
+
 const userRoutes = Router() //Chamamos o Router
 
-userRoutes.post('/', (request, reponse) => {
-  const { name, email, password } = request.body
-  reponse.json({ name, email, password })
-})
+const userController = new UserController() //estamos estanciando a classe que contém os metodos que vamos precisar
+
+userRoutes.post('/', userController.create)
 
 module.exports = userRoutes //Aqui estou exportando para chamar lá no server.js
