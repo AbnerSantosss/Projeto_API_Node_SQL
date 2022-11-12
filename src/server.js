@@ -1,5 +1,7 @@
 require('express-async-error')
 
+const database = require('./database/sqlite')
+
 const AppError = require('./utils/AppError')
 
 const express = require('express')
@@ -12,6 +14,9 @@ app.use(express.json())
 
 app.use(routes) //Routes que Puxa o index.js da pasta routes
 
+database()
+
+//Tratamento de exeções//
 app.use((error, request, response, netx) => {
   //Aqui estou fazendo uma validação usando o instanceof para me saber se o error foi gerado pelo lado do cliente, se for vai entrar no if
   if (error instanceof AppError) {
@@ -31,7 +36,7 @@ app.use((error, request, response, netx) => {
     message: 'Error interno do servidor'
   })
 })
-
+;('')
 const PORT = 333
 
 app.listen(PORT, () => console.log(`O servidor está rodando na porta ${PORT}`))

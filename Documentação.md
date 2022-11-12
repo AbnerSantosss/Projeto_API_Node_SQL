@@ -407,3 +407,167 @@ app.use((error, request, response, netx) => {
 
 
 
+<div align="center">
+
+SQL não é um banco de dados! SQL é uma Linguagem padrão de Banco de dados, e significa: Línguagem de consulta Estruturada
+
+Temos os Grupos de comandos SQL DDL (Data Definition Language) que são:
+
+* CREATE -Para criar tabela
+* DROP - Para deletar uma tabela
+* ALTER - Para atualizar informações da tabela
+
+
+
+
+![Captura de tela 2022-11-12 170831](https://user-images.githubusercontent.com/107922389/201492632-b14643f3-8081-4b7b-a22f-dcad92385d20.png)
+
+
+E também podemos ter tabelas que conversão entre si, no caso elas se RELACIONAM
+
+
+![Captura de tela 2022-11-12 171123](https://user-images.githubusercontent.com/107922389/201492710-4112b3bf-5da3-4425-85ee-eb1932bad4c7.png)
+</div>
+
+* A ligação na imagem é o relacionamento das tabelas chamado de CHAVE PRIMARIA!
+
+* Temos tambem a CARDIALIDADE, significa a frequencia que uma tabela se comunica com a outra (noque quele simbolo que parece um pé de galinha na foto que eu coloquei)
+isso quer dizer que: um Usuario poder ter varias notas, mas varias notas podem ter só mente um único usuarios
+
+1- No nosso banco de dados vamos usar o SQLite, para instalar vamos usar o seguinte comando:
+
+npm install sqlite3 sqlite --save
+
+2- Vamos criar uma pasta dentro de src chamada database e dentro dela outra pasta chamada sqlite e dentro dela um index.js
+
+Passo 1 
+const sqlite3 = require('sqlite3')
+const sqlite3 = require('sqlite')
+const path = require('path') // É uma biblioteca do proprio node que facilita nossa navegação quando formos usar o filename
+
+
+Passo 2 criar a função assincrona
+
+//Estamos usando uma função assincrona pois estamos trabalhando com banco de dados, e sabemos que com bancos de dados temos um tempo pra esperar uma resposta
+async function sqliteConection(){
+
+//Para abrir uma conexão usando o sqlite.open e dentro vamos passa um objeto com as configurações
+
+  const database = await sqlite.opne({ 
+    //O filename vamos dizer onde queremos salvar o nossso arquivo
+     filename: path.resolve(__dirname, '..', 'database.db')// Aqui estamos dizendo que queremos criar esse arquivo independete do sistema de navegação do sistema operacional!
+
+  })
+
+}
+
+
+3- Temos que adicionar o DRIVER que vamos ultilizar que é o SQLite3 vamos colocar depois do filename, vai ficar assim toda a função pronta:
+
+const sqlite3 = require('sqlite3')
+const sqlite = require('sqlite')
+const path = require('path') // É uma biblioteca do proprio node que facilita nossa navegação quando formos usar o filename
+
+//Estamos usando uma função assincrona pois estamos trabalhando com banco de dados, e sabemos que com bancos de dados temos um tempo pra esperar uma resposta
+async function sqliteConection() {
+  const database = await sqlite.opne({
+    //Para abrir uma conexão usando o sqlite.open e dentro vamos passa um objeto com as configurações
+    //O filename vamos dizer onde queremos salvar o nossso arquivo
+    filename: path.resolve(__dirname, '..', 'database.db'),
+    driver: sqlite3.Database
+  })
+}
+
+module.exports = sqliteConection
+
+
+
+
+4- Agora vamos no server.js temos que importar o arquivo database
+
+const database = require('./database/sqlite')
+
+
+5- Depois no arquivo server.js depois das rotas vamos executar o banco assim:
+
+database()
+
+
+6- Fazendo isso, temos que verificar se foi criado um arquivo database.db foi criado dentro da pasta database, se der tudo certo ele vai ser criado!
+
+7-Pra gente poder visualizar esse arquivo sem ser pelo vscode, podemos usar um SGBD 
+
+> SGBD - Que é um sistema geranciador de banco de dados!
+
+Ele é uma ferramente que nos ajuda com as seguintes coisas
+* Visualizar o que tem dentro do banco!
+* Incluir registros
+* Deletar
+* Ver estrutura
+
+No nosso projeto vamos usar o BeeKeeper!
+
+ATENÇÃO: Entidades é a mesma coisa de tabelass!
+
+8- No beeKeeper vamos criar nossas tabelas, mas temos que ter em mente as seguintes coisas:
+
+* Nomes de comandos SQL vamos digitar em caixa alta 
+* Nomes que nós atribuimos vamos dar em caixa baixa
+
+
+Comando por exemplo id INTEGER PRIMARY KEY AUTOINCREMENTE estou dizendo que é um campo primario, significa que isso é uma chave e nunca dentro da mesma tabela eu vou ter usuarios com a mesma chave! podemos usar de exemplo o CPF eles são unicos!
+
+O autoincremente vai criar automaticamente ids de acordo com a necessidade da tabela de forma automatica!
+
+vamos ver um exemplo a baixo de uma tabela qu criamos no nosso projeto:
+
+CRIANDO TABELA:
+
+![Captura de tela 2022-11-12 193629](https://user-images.githubusercontent.com/107922389/201497232-831c5676-41ee-42ac-af23-e0d4c6f9ef51.png)
+
+Legenda:
+
+* VARCHAR = Campo requerido
+* NULL =  Campo começa vazio
+* TIMESTAMP_DEFAULT CURRENT_TIMESTAMP = Significa que o proprio sistema vai criar de forma automatica o registro do campo que for passsado essa linha de comando geralmente de Update e criação.
+
+RENOMEANDO TABELA:
+
+![Captura de tela 2022-11-12 195605](https://user-images.githubusercontent.com/107922389/201497751-5b002e1f-3cf2-448e-969b-fbe30cf9156d.png)
+
+* Vermelho : Nome da tabela que você quer renomear
+* Azul: Novo Nome 
+
+ADICIONANDO NOVA COLUNA:
+
+![Captura de tela 2022-11-12 200900](https://user-images.githubusercontent.com/107922389/201498068-170e478a-df90-4ce6-a668-46af70b3eb15.png)
+
+*Na linha de baixo estamos dizendo o nome da nova coluna e se ela é requerida!
+
+
+RENOMENDO COLUNA:
+
+![Captura de tela 2022-11-12 201253](https://user-images.githubusercontent.com/107922389/201498169-15bfe4d4-6c2b-4351-851c-373ee03c1fc0.png)
+
+DELETANDO COLUNA:
+
+![Captura de tela 2022-11-12 201606](https://user-images.githubusercontent.com/107922389/201498280-50db1334-6a31-4323-9fdd-ba5c1bc2547f.png)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
