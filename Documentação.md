@@ -555,6 +555,286 @@ DELETANDO COLUNA:
 
 
 
+9- Agora vamos automatizar a criação das nossas tabelas!
+
+Vamos criar uma pasta dentro da pasta Sqlite, com o nome  de migrations
+
+dentro da migrations vamos criar um arquivo chamado createIsers.js e e index. dentro de cada arquivo vamos ter ao seguinte codigo
+ 
+ 
+ INDEX.JS:
+
+const sqliteConnection = require('../../sqlite')
+
+const createUsers = require('./createUsers.js')
+
+async function migrationsRun() {
+  const schemas = [createUsers].join('')
+
+  sqliteConnection()
+    .then(db => db.exec(schemas))
+    .catch(error => console.error(error))
+}
+
+module.exports = migrationsRun
+
+
+CREATE USERS.JS:
+
+
+//Essa parte aqui é oq eu teria que colocar lá no SGBD(beekeper) para criar uma tabela, ai no caso estou automatizando através desse arquivo
+
+const createUsers = `
+CREATE TABLE IF NOT EXISTS users ( 
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name VARCHAR,
+  email VARCHAR,
+  password VARCHAR,
+  avatar VARCHAR NULL,
+  create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  update_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )
+  `
+
+module.exports = createUsers
+
+//CREATE TABLE IF NOT EXISTS users -> Estou dizendo que só quero que a tabela seja criada se não existir nenhumc om esse nome, fazendo isso evita conflito
+
+
+
+ATENÇÃO!!! depois que fizer isso temos que ir lá no nosso arquivo principal server.js e mudar a importação do banco de dados!
+ 
+ 
+ lá nos colocamos assim:
+ const database = require('./database/sqlite')
+
+ e chamamos assim:
+
+ database()
+
+
+ Agora vai ficar assim: 
+
+ const migrationsRun = require('./database/sqlite/migrations')
+
+ e chamamos assim:
+
+ migrationsRun()
+
+
+
+10- Proximo passo é irmos no nosso controller para fazer a conexão com o banco de criar  tudo diretamente no banco! o controler vai ficar assim, já com a função de criar usuario!
+
+
+const sqliteConection = require('../database/sqlite')
+const AppError = require('../utils/AppError')
+
+class UserController {
+  async create(request, response) {
+    const { name, email, password } = request.body
+
+    const database = await sqliteConection()
+    //Vamos verificar se o usuario já existe, isso diretamente  com o banco
+    const checkUserExists = await database.get(
+      'SELECT * FROM users WHERE  email = (?)',
+      [email]
+    ) // Aqui estou dizendo: Liste todos os usuarios quem tem um email iguais ao email passado na variavel dentro do vetor [email]
+
+    if (checkUserExists) {
+      throw new AppError('este email já está em uso.')
+    }
+    //Criando usuario, aqui estou dizendo que quero inserir na tabela user, o nome email e password// As interrogações são informanado quantos valores eu quero informar e dentro do vetor digo quais são esses valores (são informações que eu trago lá da constante no topo do escopo dessa função)
+    await database.run(
+      'INSERT INTO users (name, email, password) VALUES (?,?,?)',
+      [name, email, password]
+    )
+
+    return response.status(201).json()
+  }
+}
+
+module.exports = UserController
+
+
+
+11- Agora vamos criptografar as senhas, para que elas não sejam visiveis pra quem está vendo o banco!
+Para isso vamos instalar o bcryptjs!
+
+npm install bcryptjs
+
+Depois de instalado vamos no nosso controler e e no topo importamos no hash  que é a função que vai gerra a criptografia! vai ficar assim
+
+const {hash} = require('bcryptjs')
+
+
+proximo passo é criar uma variavel dentro da função que se vai usar o bcrypt e nela vamos fazer assim:
+
+ const hashedPassword = await hash(password , 8)
+
+ Note que temos dois parametros, o primeiro é a senha em si (que recebemos do usuario) e o segundo é o nivel de complexidade!
+
+ logo depois temos que pegar essa variavel e e colocar ela no lugar no password onde fica !
+
+A função que receber a variavel vaii ficar assim
+  await database.run(
+      'INSERT INTO users (name, email, password) VALUES (?,?,?)',
+      [name, email, hashedPassword]
+    )
+
+
+
+
+12- Agora vamos criar a rota para ATUALIZAR o usuario!
+a Função vai ficar assim:
+
+  async update(request, response) {
+    const { name, email } = request.body
+    const { id } = request.params
+
+    const database = await sqliteConection()
+    //=============VERIFICAÇÃO-1=============================//
+
+    //-1--Aqui estou buscando no banco o id que o usuario está tentando atualizar
+    const user = await database.get('SELECT * FROM user WHERE  id = (?)', [id])
+    // Aqui estou verificando se o usuario que a pessoa tentou atualizar existe no banco
+    if (!user) {
+      throw new AppError('Usúario não encontrado')
+    }
+
+    //=============VERIFICAÇÃO-2=============================//
+
+    //--2--Aqui estou verificando se ele está tentando atualizar o email dele para um outro email já cadastrado no banco de dados!
+    //SELECT * FROM users WHERE email = (?)', [email] ==> Vai buscar em todos os campos da minha tabela de usuarios, onde o email seja igual ao [email] recebido como parametro
+    const userWithUpdateEmail = await database.get(
+      'SELECT * FROM users WHERE email = (?)',
+      [email]
+    )
+
+    //=============VERIFICAÇÃO-3=============================//
+    //--3--Estou dizendo: Se ele econtrar um email e se esse email for diferente do id do mesmo, isso significa que ele está tentando mudar o email para um que ja existe!
+
+    if (userWithUpdateEmail && userWithUpdateEmail.id !== user.id) {
+      throw new AppError('Esté email já está em uso!')
+    }
+
+    //=============AGORA PODEMOS ATUALIZAR=============================//
+~~~javascript
+    user.name = name
+    user.email = email
+
+    await database.run(
+      `
+      UPDATE users SET
+      name=?,
+      email=?,
+      updated_at=?
+      WHERE id=?`,
+      [user.name, user.email, new Date(), id]
+    )
+
+
+     return response.json({ message: 'Usuário Atualizado com sucesso' })
+  
+~~~
+
+
+
+  ATENÇÃO: para pegar essa função, temos que ir lá no user.routes e acrescentar a nova rota para deixar visivel para aplicação! vai ficar assim:
+
+~~~javascript
+userRoutes.put('/:id', userController.update)
+~~~
+
+
+13- Agora vamos atualizar a senha, para isso vamos usar a lógica de uma condição: Para atualizar a nha para uma senha nova vamos ter quer colocar a antiga!
+
+
+Exemplo de estrutura do Json:
+~~~javascript
+{
+    "name": "Ana Karla",
+    "email": "Ana@hotmail.com",
+    "password": "5685457865",
+    "old_password": "15454523"
+}
+
+~~~
+
+
+- Agora vamos no Update e dentro dele modificar o que estou recebendo da requisição:
+está assim:
+~~~javascript
+const { name, email } = request.body
+~~~
+vai ficar assim:
+~~~javascript
+const { name, email ,  } = request.body
+~~~
+
+-E vamos criar um if para fazer uma validação
+
+~~~javascript
+   if (password && !old_password) {
+      throw new AppError(
+        'Você precisar digitar a senha antiga para definir a nova senha'
+      )
+    }
+
+~~~
+
+
+14- Agora Temos que verificar se a senha antiga informada é igual a senha antiga do banco de dados, se forem iguais vamos deixar entrar no if e o codiog vai rodar.
+
+- Para isso vamos importar o compare, vamos usar ele junto com o hash lá no topo do código, vai ficar assim:
+
+const { hash , compare } = require('bcryptjs')
+
+
+
+-Agora vamos fazer um if para comparar as senhas antigas, se forem iguais podemos autorizar
+
+~~~javascript
+    //Aqui estou comparando a senha antiga digitada com a senha antiga do banco de dados, elas tem que ser iguais para eu autorizar a troca de senha.
+    if (password && old_password) {
+      const checkOld_password = await compar(old_password, password)
+
+      if (!checkOld_password) {
+        //Aqui estou checando se as senhas são diferentes se forem vai entrar nesse if e cuspír esse error
+        throw new AppError('A senha antiga não confere')
+      }
+
+      //se tudo der certo, vamos atribuir a nova senha já criptografada
+      user.password = await hash(password, 8)
+    }
+~~~
+
+- Vamos atualizar também a minha model do banco de dados, adicionando o password e dentro do array o user.password. Vai ficar assim:
+
+~~~javascript
+ await database.run(
+      `
+      UPDATE users SET
+      name=?,
+      email=?,
+      password=?,
+      updated_at=?
+      WHERE id=?`,
+      [user.name, user.email, user.password, new Date(), id]
+    )
+~~~
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
