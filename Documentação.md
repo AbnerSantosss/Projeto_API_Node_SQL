@@ -796,7 +796,7 @@ const { hash , compare } = require('bcryptjs')
 ~~~javascript
     //Aqui estou comparando a senha antiga digitada com a senha antiga do banco de dados, elas tem que ser iguais para eu autorizar a troca de senha.
     if (password && old_password) {
-      const checkOld_password = await compar(old_password, password)
+      const checkOld_password = await compar(old_password, user.password)
 
       if (!checkOld_password) {
         //Aqui estou checando se as senhas são diferentes se forem vai entrar nesse if e cuspír esse error
@@ -807,6 +807,8 @@ const { hash , compare } = require('bcryptjs')
       user.password = await hash(password, 8)
     }
 ~~~
+
+
 
 - Vamos atualizar também a minha model do banco de dados, adicionando o password e dentro do array o user.password. Vai ficar assim:
 
@@ -822,6 +824,124 @@ const { hash , compare } = require('bcryptjs')
       [user.name, user.email, user.password, new Date(), id]
     )
 ~~~
+
+
+15-ATENÇÃO!!! Vamos fazer um ajuste!!!!
+
+Na estrutura dos dados para o banco, vamos retirar o new Date() e fazer com que o proprio banco fique resposavel por regiostrar as horas que o registro foi atualizado!
+
+A nova estrutura vai ficar assim:
+~~~javascript
+   await database.run(
+      `
+      UPDATE users SET
+      name=?,
+      email=?,
+      password=?,
+      updated_at= DATETIME('now')
+      WHERE id=?`,
+      [user.name, user.email, user.password, id]
+    )
+~~~
+
+O datetime('now') vai ser atualizado por uma função que existe lá dentreo do banco.
+o banco de dado tem funções também!!
+
+16- Agora vamos fazer uma validação usando o nullish operator em resumo: ou é um ou é outro!
+
+//Aqui estou dizendo: Se tem conteudo no primeiro parametro, coloca ele, se não tiver coloca o do segundo, estou fazendo isso para quandoneu redefinir a senha, mesmo colocando o campo nome e emailm vazio ele ser preenchido automaticamente!
+
+~~~javascript
+    user.name = name ?? user.name
+    user.email = email ?? user.email
+
+  ~~~
+
+
+
+
+17- ######=====SQL Query Builder====#####
+
+É um construtor de consulta!
+
+Ele permite que a gente gere instruções SQL, independete do Banco de dados que nós estamos ultilizando!
+
+Os banco de dados relacionais eles ultilizam um mesmo padrão de linguagem de conulta que é o SQL, mas podem ter algumas diferenças de um banco para o outro, por exemplo:
+
+No MySql o ponto e virula é Obrigatório no SQLserver não.
+
+Se estamos trabalhando com um banco e por algum motivo mudamos esse banco, podemos ter um problema!
+
+Ai que entra a Query Builder:
+
+Ele nos permite gerar códigos SQL independete do banco!
+
+
+como funciona???
+
+Ao inves de escrever meu código SQl especifico pro banco eu vou escrever utilizando a query builder, então eu vou usar a sintax do query builder, ele vai gerar o código SQL pro banco de dados que eu pedir para ele gerar
+
+
+18- Para trabalhar com Query builder vamos usar o Knex.js
+
+Ele é uma query builder!
+
+-Para instalar usaremos o comando:
+
+npm install knex --save
+
+
+Agora vamos fazer as configurações dele!
+
+-Rodando o comando:
+
+npx knex init
+
+
+-vai ser gerado um arquivo .js na raiz do projeto.
+
+Vamos configura-lo assim:
+
+~~~javascript
+const path = require('path')
+
+module.exports = {
+  development: {
+    client: 'sqlite3', //Aqui estamos dizendo qual o tipo de banco de dados
+    connection: {
+      filename: path.resolve(__dirname, 'src', 'database', 'database.db') //Aqui fica nossa conexão, estou indicando o lugar que está o nosso banco de dados.
+      //ATENÇÃO:Note que estou chamando o path lá em cima, ele vai nos auxiliar na quatão da navegação indipendente do sistema operacional, e no filename ao inves de dizer o caminhão da forma tradicvional eu usei o path.
+    },
+    useNullAsDefault: true //Uma propriedade padrão para trabalhgar com SQlite
+  }
+}
+
+~~~
+
+
+19- Agora vamos criar um uma pasta dentro de SRC chamada Knex e de dentro um index.js nela vamos fazer algumas configurações.
+nesse arquivo vai ficar assim:
+
+~~~javascript
+const config = require('../../../kenxfile')
+
+const knex = require('knex')
+
+const connection = knex(config.development)
+
+module.exports = connection
+
+~~~
+
+
+
+
+
+
+
+
+
+
 
 
 
