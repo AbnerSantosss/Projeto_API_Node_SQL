@@ -934,25 +934,322 @@ module.exports = connection
 ~~~
 
 
+20- Migrations:  é uma forma de versionar a base de dados, trabalha na manipulação da base de dados: criando,alterando ou removendo isso para o banco de dados!
+
+Ao inves de criar uma tabela manualmente,alterar ou remover podemos usar a migration para fazer isso pra gente!
+
+temos dois métodos:
+
+UP: Ele cria ou aletar algo no banco de dados
+
+DOWN: responsável pelo rollback. Ou seja, desfazer as alterações realizadas pela migration
+
+
+21- Agora com o knexfiles.js vamos implementarv estrategia de migrations para automastizar a criação de tabelas na aplicação
+
+1- Vamos monstrar ao knexfile o lugar que ele vai armazenar as informações
+
+2- depois do connection vamos fazer essa configuração, veja abaixo como vai ficar
+
+~~~javascript
+  migrations:{
+      directory: path.resolve(__dirname,"src", "database", "knex", "migrations")
+    },
+
+~~~
+
+
+
+22- Agora vamos chamar o knex no nosso terminal e ele vai criar a tabela de forma automatica.
+
+
+~~~javascript
+npx knex migrate:make createNotes
+~~~
+
+23- Vai gerar uma pasta no directorio que foi configurado no migration e dentro dela um arquivo dentro desse arquivo é que vai ficar as configurações, e esse arquivo tem que está asim:
+
+
+
+~~~javascript
+exports.up = knex =>
+  knex.schema.createTable('notes', table => {
+    table.increments('id')
+    table.text('title')
+    table.text('descriptions')
+    //Abaixo estou dizendo que quero criar um campo do tipo inteiro na minha tabela, chamado user_id e que ele faz referencia ao id que existe dentro da tavbela usuario, resumindo: só vai criar uma nota se existir um usuario.
+    table.integer('user_id').references('id').inTable('users')
+
+    table.timestamp('created_at').default(knex.fn.now())
+    table.timestamp('updated_at').default(knex.fn.now())
+  })
+
+exports.down = knex => knex.schema.downTable('notes')
+
+
+~~~
+
+
+24- vamos agora rodar essa migration par ver se está funcionando usando o seguinte comando:
+
+~~~javascript
+
+npx knex migrate:latest
+~~~
+
+Se pegar lá no beekeeper vai ser gerado umas pastas!
+
+
+25- agoras temos que criar um script para poder estartar essas tabelas sem precisar ficar dando esse comando enorme, então vamos fazer assim:
+
+package.Json > scripts 
+
+lá vamos criar um assim:
+
+~~~javascript
+"migrate": "knex migrate:latest"
+~~~
+
+
+e para rodar ela no terminal vamos fazer assim:
+
+~~~javascript
+npm run migrate
+
+~~~
+
+
+##### NPM X NPX ###
+
+-Npm: Gerenciador de pacote padrão do node.
+
+Npx: Node Package Execute e vem com npm acima da versão 5.2, ele é um executor de pacotes npm que pode executar qualquer pacote np´m sem precisar instalar o mesmo
+
+
+
+###### Primary key X Foreign Key ######
+
+-Chave primaira: 
+ é o identificador unico dentro da tabela, o objetivo dela é indetificar os registro para cada um ter seu proprio identificador,  a BASE de uma chave primeria é garanbtir que esse valor não se repita!
+
+
+-chave estrangeira:
+É uma chave que vem de outra tabela, ela tem o objetivo e a ultilidade de conectar Tabelas! Ela indica que na tabela atual tem uma outra chave que veio de outra tabela, e ela identifica mostrando de onde veio.
+
+
+###### Cardinalidade ######
+
+É a frequencia com que uma tabela se comunica com a outra!
+
+prestar atenção nos graficos que ligam as tabelas, ex: pe de galinha.
+
+
+
+26- Agora vamos criar as tabelas do que vamos precisar, já criamos as das Notas agora vamos criar a das tags!
+
+Com o comando:
+
+npx knex migrate:make createTages
+
+Vamos ver cmo vai ficar nosso migration createTags
+
+~~~javascript
+exports.up = knex =>
+  knex.schema.createTable('tags', table => {
+    table.increments('id')
+    table.text('name').notNullable()
+
+    //A baixo estou dizendo que o id note ta vendo da tabela de notes, e coloquei o onDelete("CASCADE") que significa: Se eu deletar a nota que essa tag está veiculada automaticamente e vai ser deletada também. Para quando as notas forem excluidas não ficar cheio de tags desnecessaris no banco.
+    table
+      .integer('note_id')
+      .references('id')
+      .inTable('notes')
+      .onDelete('CASCADE')
+
+    table.integer('user_id').references('id').inTable('users')
+  })
+
+exports.down = knex => knex.schema.downTable('tags')
+
+~~~
+
+
+27- Agora vamos criar as dos Linkes!
+
+npx knex migrate:make createLinks
+
+e o arquivo js vai ficar assim:
+
+~~~javascript
+exports.up = knex =>
+  knex.schema.createTable('links', table => {
+    table.increments('id')
+    table.text('url').notNullable()
+
+    
+    table
+      .integer('note_id')
+      .references('id')
+      .inTable('notes')
+      .onDelete('CASCADE')
+    table.timestamp('created_at').default(knex.fn.now())
+  })
+
+exports.down = knex => knex.schema.downTable('links')
+
+~~~
+
+
+Agora vamos rodar tudo!
+
+npm run migrate
+
+
+
+28- Vamos no nosso SGBD e verificar se foi criada as tabelas e se elas estão ligadas entre si.
+
+
+
+29- Por padrão no sqlite a funcionalidade de apagar em cascata ela é desabilitada por padrão, então vamos fazer assim.
+
+-Ir no nosso arquivo knexfile.js e vamos colocar a baixo de connection o seguinte código.
+
+
+~~~javascript
+ pool: {
+      //Aqui estou habilitanbdo a funcionalidade de quando eu apagar uma nota, também sem excluido também as tags e tudo relacionado aquela nota que está em outro banco.
+      afterCreate: (conn, cb) => conn.run('PRAGMA foreing_keys = ON', cb)
+    }
+
+~~~
+
+
+Todo o código vai ficar assim:
+
+~~~javascript
+const { default: knex } = require('knex')
+const path = require('path')
+
+module.exports = {
+  development: {
+    client: 'sqlite3', //Aqui estamos dizendo qual o tipo de banco de dados
+    connection: {
+      filename: path.resolve(__dirname, 'src', 'database', 'database.db') //Aqui fica nossa conexão, estou indicando o lugar que está o nosso banco de dados.
+      //ATENÇÃO:Note que estou chamando o path lá em cima, ele vai nos auxiliar na quatão da navegação indipendente do sistema operacional, e no filename ao inves de dizer o caminhão da forma tradicvional eu usei o path.
+    },
+    pool: {
+      //Aqui estou habilitanbdo a funcionalidade de quando eu apagar uma nota, também sem excluido também as tags e tudo relacionado aquela nota que está em outro banco.
+      afterCreate: (conn, cb) => conn.run('PRAGMA foreing_keys = ON', cb)
+    },
+    migrations: {
+      directory: path.resolve(
+        __dirname,
+        'src',
+        'database',
+        'knex',
+        'migrations'
+      )
+    },
+    useNullAsDefault: true //Uma propriedade padrão para trabalhgar com SQlite
+  }
+}
+
+
+~~~
+
+
+30- Agora vamos criar no postman a estrutura json com os dados para as notas!
+
+temos que colocar tudo oq esperamos receber no banco:
+
+
+{
+   "title": "Introdução ao NodeJs",
+   "description": "Essa é uma nota de exemplo",
+   "tags": ["node","express"],
+   "links": ["link1","link2"]
+}
+
+
+
+
+31- Agora para nossa aplicação vamos criar um controler ( o que criamos foi de usuario).
+
+vamos na poasta controller e vamos criar um arquivo chamado:
+
+NotesController.js
+
+
+1- Dentro dele temos que importar o knex!
+
+e vai ficaar assim:
+
+~~~javascript
+const knex = require('../database/knex')
+
+class NotesController {
+  async create(request, respose) {
+    //estou pegando os dados que vem do postman (do corpo da requisição)
+    const { title, description, tags, links } = request.body
+    const { user_id } = request.params
+
+    const note_id = await knex('notes').insert({ title, description, user_id })
+
+    const linksInsert = links.map(link => {
+      return {
+        note_id,
+        url: link
+      }
+    })
+
+    await knex('link').insert(linksInsert)
+
+    //////VAMOS FAZER A MESMA COISA COM AS TAGS////////
+
+    const tagsInsert = links.map(name => {
+      return {
+        note_id,
+        name,
+        user_id
+      }
+    })
+    await knex('tags').insert(tagsInsert)
+
+    respose.json()
+  }
+}
+
+module.exports = NotesController
+
+~~~
 
 
 
 
 
 
+32- Agora criar as rotas para ele, para isso vamos lá em routes e vamos criar um arquivo chamado
+
+notes.routes.js
+
+e dentro dele vai ficar assim:
+
+~~~javascript
+
+const { Router } = require('express') //Estamos fazendo a importação o express para poder trabalhar as rotas aqui nesse arquivo
+
+const NotesController = require('../controller/NotesController')
+
+const notesRoutes = Router() //Chamamos o Router
+
+const notesController = new NotesController() //estamos estanciando a classe que contém os metodos que vamos precisar
+
+notesRoutes.post('/:user_id', notesController.create).
+
+module.exports = notesRoutes //Aqui estou exportando para chamar lá no server.jss
 
 
-
-
-
-
-
-
-
-
-
-
-
+~~~
 
 
 

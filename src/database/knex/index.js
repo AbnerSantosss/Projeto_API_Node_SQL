@@ -1,4 +1,4 @@
-const config = require('../../../kenxfile')
+const config = require('../../../knexfile')
 
 const knex = require('knex')
 
