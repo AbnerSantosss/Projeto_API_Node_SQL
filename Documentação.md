@@ -1253,11 +1253,139 @@ module.exports = notesRoutes //Aqui estou exportando para chamar lá no server.j
 
 
 
+## 34 - Proximo passo é criar a estrutura no postman também adicionando o link da rota
+
+Vai ser uma resquisição do tipo POST com o body assim:
+
+~~~javascript
+{
+    "title": "Nota Criada Na Madrugada",
+    "descriptions": "madrugada",
+    "tags": ["node","express"],
+    "links": ["link6", "link7"]
+}
+
+~~~
+
+E o link no postman vai ser o localhorst/notes/id
+
+- lá no script vamos em NotesControllers e montar o códidigo:
+
+vai ficar assim:
+
+~~~javascript
+  //Aqui vamos criar a função de exibir as notas
+  async show(request, respose){
+
+    const {id} = request.params;
+
+    //para selecionar as notas baseadas no id vamos isar o filtro where
+
+    const note =await knex("notes").where({id}).first() //o first estou dizendo que quero a primeira
+    
+    return response.json(note)  //lembrar de acrescentar no arquivo de notas o notes.routes
+  }
+~~~
+
+Agora dentro da  pasta routes no index vamos chamar essa função
+
+routes.use('/notes', notesRoutes)
+
+e dentro do arquivo notes.routes.js:
+
+notesRoutes.get('/:id', notesController.show)
+
+o mesmo vamos fazer com as tags, links e etc
+
+A função de leitura no final vai ficar assim:
+
+~~~javascript
+  //Aqui vamos criar a função de exibir as notas
+  async show(request, response){
+
+    const {id} = request.params;
+    console.log('chegou aqui no show');
+    //para selecionar as notas baseadas no id vamos isar o filtro where
+
+    const note = await knex("notes").where({id}).first(); //o first estou dizendo que quero a primeira
+    const tags = await knex('tags').where({note_id:id}).orderBy('name')
+    const links = await knex('links').where({note_id: id}).orderBy("created_at")
+    
+    return response.json({
+     ...note,
+     tags,
+     links
+
+    });  //lembrar de acrescentar no arquivo de notas o notes.routes
+  }
+
+  ~~~
 
 
 
+## 35 - Agora vamos criar a rota de delete, em NotesController vamos repetir os mesmos processos dos demais, primeira criar a função:
+
+~~~javascript
+
+ //Aqui vamos criar a função para Deletar as notas
+
+  async delete (request, response){
+
+  //Para fazer a funcionalidade de delete vamo pegar o id
+  const {id} = request.params;
+
+  await knex('notes').where({id}).delete();
+
+  return response.json();
+
+  }
+
+~~~
+
+## 36 - Agora uma outra para mostrar todas as notas
+~~~javascript
+
+  //Função para Mostrar todas as notas
+
+  async index (request , response){
+
+    const {user_id} = request.query;
+    const notes = await knex ('notes').where({user_id}).orderBy("title");
+    return response.json(notes)
+    //utilizamos o orderBy para poder colocar em rodem alfabetica.
+  }
+~~~
+
+ e lá no notes.routes.js  vamos colocar assim:
+
+~~~javascript
+ notesRoutes.get('/', notesController.index)
+~~~
+  
+Vamos no postman e add uma nova query desse modo:
+
+key: user_id  com value: 2
+
+## Porém vamos reformular isso, vamos ter que também adicionar uma condição de pesquisa por titulo, agora o código vai ficar assim, reformulado:
 
 
+~~~javascript
+ async index (request , response){
+
+    const {title,user_id} = request.query;
+    //Aqui estou usando o operador whereLike ele nos ajuda buscar valores que contenham dentro de uma palavra, no primeiro parametro é o campo que
+    //Quero usar e logo após coloco a variavel com percentual essa variavel ela diz ao banco de dados que queremos fazer busca tenato antes quanto depois.
+    //isso vai nos permitir fazer busca apenas usando palavras ao ives de tetoz completos
+    const notes = await knex ("notes").where({user_id}).whereLike("title", `%${title}%`).orderBy("title");
+    
+    return response.json({notes});
+    //add também o title que é um parametro para usar nas buscas
+    //utilizamos o orderBy para poder colocar em rodem alfabetica.
+  }
+
+~~~
+
+  
 
 
 

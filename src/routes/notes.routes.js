@@ -6,6 +6,11 @@ const notesRoutes = Router() //Chamamos o Router
 
 const notesController = new NotesController() //estamos estanciando a classe que contém os metodos que vamos precisar
 
+
+notesRoutes.get('/', notesController.index)
 notesRoutes.post('/:user_id', notesController.create)
+notesRoutes.get('/:id', notesController.show)
+notesRoutes.delete('/:id', notesController.delete)
 
 module.exports = notesRoutes //Aqui estou exportando para chamar lá no server.js
+
