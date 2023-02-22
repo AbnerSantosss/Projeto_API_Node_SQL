@@ -1338,7 +1338,7 @@ A função de leitura no final vai ficar assim:
 
   return response.json();
 
-  }
+ }
 
 ~~~
 
@@ -1366,7 +1366,7 @@ Vamos no postman e add uma nova query desse modo:
 
 key: user_id  com value: 2
 
-## Porém vamos reformular isso, vamos ter que também adicionar uma condição de pesquisa por titulo, agora o código vai ficar assim, reformulado:
+# Porém vamos reformular isso, vamos ter que também adicionar uma condição de pesquisa por titulo, agora o código vai ficar assim, reformulado:
 
 
 ~~~javascript
@@ -1385,14 +1385,149 @@ key: user_id  com value: 2
 
 ~~~
 
-  
+## 37 Próximo passo é fazer buscas pela tag no código a cima vamos adicionar esse script.
+## ATENÇÃO!! ABAIXO ENCONTRA-SE A FUNÇÃO AS FUNÇÕES QUE FORAM FEITAS A CIMA E A NOVA COM OS FILTROS DAS TAGS
+
+
+~~~javascript
+
+async index (request , response){
+
+    const {title,user_id, tags} = request.query;
+    //Aqui estou usando o operador whereLike ele nos ajuda buscar valores que contenham dentro de uma palavra, no primeiro parametro é o campo que
+    //Quero usar e logo após coloco a variavel com percentual essa variavel ela diz ao banco de dados que queremos fazer busca tenato antes quanto depois.
+    //isso vai nos permitir fazer busca apenas usando palavras ao ives de tetoz completos
+
+    //Aqui vamos aplicar um filtro pela tag, para podermos buscar também pela Tag, para isso vamos fazer assim:
+    
+    let notes;
+    
+    if(tags){
+      //vamos converter as tags para um vetor
+      const filterTags = tags.split(",").map(tag => tag.trim());
+      
+      //Agora vamos pegar as nossas notas e fazer a pesquisa baseados nas tags
+      notes = await knex("tags").whereIn("name",filterTags);
+      
+      console.log(notes);
+
+    }else{
+
+      notes = await knex ("notes").where({user_id}).whereLike("title", `%${title}%`).orderBy("title");
+    
+      return response.json(notes);
+      //add também o title que é um parametro para usar nas buscas
+      //utilizamos o orderBy para poder colocar em rodem alfabetica.
+    }
+      
+  }
+
+  ~~~
+
+
+
+  ## 40 - Vamos usar o inner join para unificar em uma consulta os dados de duas tabelas, por fim a função index vai ficar assim, completa:
+
+  ~~~javascript
+
+    async index (request , response){
+
+    const {title,user_id, tags} = request.query;
+    //Aqui estou usando o operador whereLike ele nos ajuda buscar valores que contenham dentro de uma palavra, no primeiro parametro é o campo que
+    //Quero usar e logo após coloco a variavel com percentual essa variavel ela diz ao banco de dados que queremos fazer busca tenato antes quanto depois.
+    //isso vai nos permitir fazer busca apenas usando palavras ao ives de tetoz completos
+
+    //Aqui vamos aplicar um filtro pela tag, para podermos buscar também pela Tag, para isso vamos fazer assim:
+    
+    let notes;
+    
+    if(tags){
+
+      //vamos converter as tags para um vetor
+      const filterTags = tags.split(",").map(tag => tag.trim());
+      
+      
+      //Agora vamos pegar as nossas notas e fazer a pesquisa baseados nas tags, estamos usarndo o inner join para unir as tabelas ex = os ids com as respectivas tags.
+      notes = await knex("tags")
+      .select([
+        "note.id",
+        "notes.title",
+        "notes.user_id",
+      ]).where("notes.user_id", user_id)
+      .whereLike("notes.title", `%${title}%` )
+      .whereIn("name", filterTags).innerJoin("notes","notes.id", "tags.note_id")
+      .orderBy("notes.title")
+      
+      console.log(tags);
+      
+    }else{
+
+      notes = await knex ("notes").where({user_id})
+      .whereLike("title", `%${title}%`)
+      .orderBy("title");
+    
+      return response.json(notes);
+      //add também o title que é um parametro para usar nas buscas
+      //utilizamos o orderBy para poder colocar em rodem alfabetica.
+    }
+
+    const userTags = await knex('tags').where({user_id});
+    const notesWithTags = notes.map(note => {
+      const noteTags = userTags.filter(tag => tag.note_id === note.id);
+
+      return{
+        ...note,
+        tags: noteTags
+      }
+
+
+    });
+
+    return response.json(notesWithTags)
+      
+  }
+
+  ~~~
+
+
+
+  ## 41 - Agora vamos criar um filto para as tags, para isso vamos criar um controller só para elas, que pode ficar assim:
+
+  - TagsController.js
+
+  Dentro desse controller nós vamos fazer assim:
+
+
+~~~javascript
+
+
+//Importar o knex
+const knex = require("../database/knex");
+
+
+///Criar uma classe
+
+class TagsController {
+
+async index (request, response){
+    //vamos recuperar o id od parametro
+    const {user_id} = request.params;
+    
+    // Aqui estou dizendo para o knex assim: olha vai lá nas tags e filtra para mim onde seja igual ao user id
+    const tags = await knex ("tags")
+    .where({user_id})
+
+    return response.json(tags)
+    }
+
+}
+
+module.exports = TagsController;
 
 
 
 
-
-
-
+  ~~~
 
 
 

@@ -71,17 +71,60 @@ class NotesController {
 
   async index (request , response){
 
-    const {title,user_id} = request.query;
+    const {title,user_id, tags} = request.query;
     //Aqui estou usando o operador whereLike ele nos ajuda buscar valores que contenham dentro de uma palavra, no primeiro parametro é o campo que
     //Quero usar e logo após coloco a variavel com percentual essa variavel ela diz ao banco de dados que queremos fazer busca tenato antes quanto depois.
     //isso vai nos permitir fazer busca apenas usando palavras ao ives de tetoz completos
-    const notes = await knex ("notes").where({user_id}).whereLike("title", `%${title}%`).orderBy("title");
-    
-    return response.json({notes});
-    //add também o title que é um parametro para usar nas buscas
-    //utilizamos o orderBy para poder colocar em rodem alfabetica.
-  }
 
+    //Aqui vamos aplicar um filtro pela tag, para podermos buscar também pela Tag, para isso vamos fazer assim:
+    
+    let notes;
+    
+    if(tags){
+
+      //vamos converter as tags para um vetor
+      const filterTags = tags.split(",").map(tag => tag.trim());
+      
+      
+      //Agora vamos pegar as nossas notas e fazer a pesquisa baseados nas tags
+      notes = await knex("tags")
+      .select([
+        "note.id",
+        "notes.title",
+        "notes.user_id",
+      ]).where("notes.user_id", user_id)
+      .whereLike("notes.title", `%${title}%` )
+      .whereIn("name", filterTags).innerJoin("notes","notes.id", "tags.note_id")
+      .orderBy("notes.title")
+      
+      console.log(tags);
+      
+    }else{
+
+      notes = await knex ("notes").where({user_id})
+      .whereLike("title", `%${title}%`)
+      .orderBy("title");
+    
+      return response.json(notes);
+      //add também o title que é um parametro para usar nas buscas
+      //utilizamos o orderBy para poder colocar em rodem alfabetica.
+    }
+
+    const userTags = await knex('tags').where({user_id});
+    const notesWithTags = notes.map(note => {
+      const noteTags = userTags.filter(tag => tag.note_id === note.id);
+
+      return{
+        ...note,
+        tags: noteTags
+      }
+
+
+    });
+
+    return response.json(notesWithTags)
+      
+  }
 }
 
 module.exports = NotesController
