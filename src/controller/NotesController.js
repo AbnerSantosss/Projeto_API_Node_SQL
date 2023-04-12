@@ -4,7 +4,7 @@ class NotesController {
   async create(request, response) {
     //estou pegando os dados que vem do postman (do corpo da requisição)
     const { title, descriptions, tags, links } = request.body
-    const { user_id } = request.params
+    const  user_id  = request.user.id
 
     const note_id = await knex('notes').insert({ title, descriptions, user_id })
 
@@ -71,11 +71,11 @@ class NotesController {
 
   async index (request , response){
 
-    const {title,user_id, tags} = request.query;
+    const {title,tags} = request.query;
     //Aqui estou usando o operador whereLike ele nos ajuda buscar valores que contenham dentro de uma palavra, no primeiro parametro é o campo que
     //Quero usar e logo após coloco a variavel com percentual essa variavel ela diz ao banco de dados que queremos fazer busca tenato antes quanto depois.
     //isso vai nos permitir fazer busca apenas usando palavras ao ives de tetoz completos
-
+    const  user_id  = request.user.id
     //Aqui vamos aplicar um filtro pela tag, para podermos buscar também pela Tag, para isso vamos fazer assim:
     
     let notes;
@@ -86,7 +86,7 @@ class NotesController {
       const filterTags = tags.split(",").map(tag => tag.trim());
       
       
-      //Agora vamos pegar as nossas notas e fazer a pesquisa baseados nas tags
+      //Agora vamos pegar as nossas notas e fazer a pesquisa baseados nas tags, estamos usarndo o inner join para unir as tabelas ex = os ids com as respectivas tags.
       notes = await knex("tags")
       .select([
         "note.id",

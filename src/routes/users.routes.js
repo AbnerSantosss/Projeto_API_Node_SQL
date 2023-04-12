@@ -1,12 +1,23 @@
-const { Router } = require('express') //Estamos fazendo a importação o express para poder trabalhar as rotas aqui nesse arquivo
+// Importando o módulo Router do Express, que permite criar e manipular rotas
+const { Router } = require('express')
 
+// Importando o middleware de autenticação
+const ensureAuthenticatiod = require('../middleware/ensureAuthenticatiod')
+
+// Importando o controller de usuário
 const UserController = require('../controller/userController')
 
-const userRoutes = Router() //Chamamos o Router
+// Criando um objeto de rotas
+const userRoutes = Router()
 
-const userController = new UserController() //estamos estanciando a classe que contém os metodos que vamos precisar
+// Instanciando o controller de usuário
+const userController = new UserController()
 
+// Definindo a rota POST para criação de usuário
 userRoutes.post('/', userController.create)
-userRoutes.put('/:id', userController.update)
 
-module.exports = userRoutes //Aqui estou exportando para chamar lá no server.js
+// Definindo a rota PUT para atualização de usuário, com o middleware de autenticação
+userRoutes.put('/', ensureAuthenticatiod, userController.update)
+
+// Exportando as rotas para serem utilizadas em outro arquivo, neste caso no server.js
+module.exports = userRoutes

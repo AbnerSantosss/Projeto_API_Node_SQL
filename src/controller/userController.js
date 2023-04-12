@@ -42,13 +42,13 @@ class UserController {
 
   async update(request, response) {
     const { name, email, password, old_password } = request.body
-    const { id } = request.params
+    const user_id = request.user.id
 
     const database = await sqliteConection()
     //=============VERIFICAÇÃO-1=============================//
 
     //-1--Aqui estou buscando no banco o id que o usuario está tentando atualizar
-    const user = await database.get('SELECT * FROM users WHERE id=(?)', [id])
+    const user = await database.get('SELECT * FROM users WHERE id=(?)', [user_id])
     // Aqui estou verificando se o usuario que a pessoa tentou atualizar existe no banco
     if (!user) {
       throw new AppError('Usúario não encontrado')
@@ -102,7 +102,7 @@ class UserController {
       password=?,
       updated_at= DATETIME('now')
       WHERE id=?`,
-      [user.name, user.email, user.password, id]
+      [user.name, user.email, user.password, user_id]
     )
 
     return response.json({ message: 'Usuário Atualizado com sucesso' })
