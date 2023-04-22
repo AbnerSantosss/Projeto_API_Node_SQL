@@ -15,5 +15,4 @@ routes.use('/tags', tagsRoutes)
 routes.use('/sessions', sessionRoutes)
 
 
-
 module.exports = routes //o outes vai ser o arquivo principal para exportar para o server.js

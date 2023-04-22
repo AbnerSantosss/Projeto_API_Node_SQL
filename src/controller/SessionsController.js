@@ -1,6 +1,9 @@
 // importação da conexão com o banco de dados
 const knex = require("../database/knex");
 
+// importação da biblioteca bcryptjs para criptografia de senhas
+const  { compare } = require('bcryptjs');
+
 // importação do módulo de erro personalizado
 const AppError = require("../utils/AppError");
 
@@ -10,8 +13,6 @@ const authConfig = require("../configs/auth");
 // importação da biblioteca jsonwebtoken para criar tokens JWT
 const { sign } = require('jsonwebtoken');
 
-// importação da biblioteca bcryptjs para criptografia de senhas
-const  { compare } = require('bcryptjs');
 
 class sessionsController {
 
@@ -39,6 +40,7 @@ class sessionsController {
             throw new AppError("Senha incorreta!", 401);
         }
         
+        
         // obtém a chave secreta e o tempo de expiração do token de autenticação a partir do arquivo de configuração
         const { secret, expiresIn } = authConfig.jwt;
 
@@ -55,3 +57,6 @@ class sessionsController {
 
 // exporta o controlador de sessões para ser utilizado em outras partes da aplicação
 module.exports = sessionsController;
+
+
+

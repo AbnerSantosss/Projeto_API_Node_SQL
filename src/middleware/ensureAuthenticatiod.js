@@ -11,7 +11,7 @@ const authConfig = require('../configs/auth')
 function ensureAuthenticatiod(request , reponse, next){
 
     // Obtém o token JWT do header 'Authorization' da requisição HTTP
-    const authHeader = request.headers.autorization;
+    const authHeader = request.headers.authorization;
   
     // Verifica se o token foi fornecido
     if(!authHeader){
@@ -20,7 +20,7 @@ function ensureAuthenticatiod(request , reponse, next){
     }
 
     // Separa o prefixo 'Bearer' do token JWT
-    const [,token] = authHeader.split('');
+    const [,token] = authHeader.split(' ');
 
     try{
         // Verifica a autenticidade do token JWT utilizando a chave secreta definida em 'authConfig.jwt.secret'

@@ -4,6 +4,8 @@ const migrationsRun = require('./database/sqlite/migrations/index.js')
 
 const AppError = require('./utils/AppError')
 
+const uploadConfig = require('./configs/upload.js')
+
 const express = require('express')
 
 const routes = require('./routes') // Aqui estou chamando meu arquivo index, que contem todas as rotas
@@ -12,6 +14,8 @@ migrationsRun()
 const app = express()
 
 app.use(express.json())
+
+app.use("/files", express.static(uploadConfig.UPLOADS_FOLDER))
 
 app.use(routes) //Routes que Puxa o index.js da pasta routes
 
