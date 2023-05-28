@@ -13,6 +13,7 @@ async index (request, response){
     // Aqui estou dizendo para o knex assim: olha vai lá nas tags e filtra para mim onde seja igual ao user id
     const tags = await knex ("tags")
     .where({user_id})
+    .groupBy('name')
 
     return response.json(tags)
     }

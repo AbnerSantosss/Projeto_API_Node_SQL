@@ -4,9 +4,9 @@ class NotesController {
   async create(request, response) {
     //estou pegando os dados que vem do postman (do corpo da requisição)
     const { title, descriptions, tags, links } = request.body
-    const  user_id  = request.user.id
+    const  user_id  = request.user_id
 
-    const note_id = await knex('notes').insert({ title, descriptions, user_id })
+    const [note_id] = await knex('notes').insert({ title, descriptions, user_id })
 
     const linksInsert = links.map(link => {
       return {
@@ -50,8 +50,6 @@ class NotesController {
 
     });  //lembrar de acrescentar no arquivo de notas o notes.routes
   }
-
-
   
   
   //Aqui vamos criar a função para Deletar as notas
@@ -94,14 +92,18 @@ class NotesController {
         "notes.user_id",
       ]).where("notes.user_id", user_id)
       .whereLike("notes.title", `%${title}%` )
-      .whereIn("name", filterTags).innerJoin("notes","notes.id", "tags.note_id")
+      .whereIn("name", filterTags)
+      .innerJoin("notes","notes.id", "tags.note_id")
+      .groupBy("notes.id")
       .orderBy("notes.title")
+
       
       console.log(tags);
       
     }else{
 
-      notes = await knex ("notes").where({user_id})
+      notes = await knex ("notes")
+      .where({user_id})
       .whereLike("title", `%${title}%`)
       .orderBy("title");
     
@@ -111,6 +113,7 @@ class NotesController {
     }
 
     const userTags = await knex('tags').where({user_id});
+    
     const notesWithTags = notes.map(note => {
       const noteTags = userTags.filter(tag => tag.note_id === note.id);
 

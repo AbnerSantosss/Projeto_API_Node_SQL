@@ -1,18 +1,19 @@
 require('express-async-errors')
-
 const migrationsRun = require('./database/sqlite/migrations/index.js')
-
 const AppError = require('./utils/AppError')
-
 const uploadConfig = require('./configs/upload.js')
 
-const express = require('express')
 
+
+
+const cors = require("cors")
+const express = require('express')
 const routes = require('./routes') // Aqui estou chamando meu arquivo index, que contem todas as rotas
+
 migrationsRun()
 
 const app = express()
-
+app.use(cors())
 app.use(express.json())
 
 app.use("/files", express.static(uploadConfig.UPLOADS_FOLDER))

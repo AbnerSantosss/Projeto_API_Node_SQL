@@ -1601,6 +1601,27 @@ module.exports = DiskStorage
 
 
   ## 20 Agora vamos no Arquivo users.routes e criar uma nova rota
+~~~javascript
+userRoutes.patch("/avatar", ensureAuthenticatiod, upload.single("avatar"), userAvatarController.update)
+
+~~~
+
+Verifique se tudo foi importado corretamente.
+
+
+## 21 Agora vamos juntar o front e o back end, para isso vamos instalar duas bibliotecas com os comandos a seguir:
+
+~~~javascript
+
+npm install cors
+
+npm instal axios
+
+~~~
+
+O comando "npm install cors" instala a biblioteca "cors" para permitir que um servidor web baseado em Node.js aceite solicitações de outros domínios, enquanto "npm install axios" instala a biblioteca "axios" para realizar solicitações HTTP em Node.js e no navegador.
+
+
 
   
 
