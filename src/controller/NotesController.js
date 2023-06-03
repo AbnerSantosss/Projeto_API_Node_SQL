@@ -36,7 +36,7 @@ class NotesController {
   async show(request, response){
 
     const {id} = request.params;
-    console.log('chegou aqui no show');
+    
     //para selecionar as notas baseadas no id vamos isar o filtro where
 
     const note = await knex("notes").where({id}).first(); //o first estou dizendo que quero a primeira
@@ -87,7 +87,7 @@ class NotesController {
       //Agora vamos pegar as nossas notas e fazer a pesquisa baseados nas tags, estamos usarndo o inner join para unir as tabelas ex = os ids com as respectivas tags.
       notes = await knex("tags")
       .select([
-        "note.id",
+        "notes.id",
         "notes.title",
         "notes.user_id",
       ]).where("notes.user_id", user_id)
@@ -97,8 +97,7 @@ class NotesController {
       .groupBy("notes.id")
       .orderBy("notes.title")
 
-      
-      console.log(tags);
+    
       
     }else{
 
