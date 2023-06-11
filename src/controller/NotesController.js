@@ -4,7 +4,7 @@ class NotesController {
   async create(request, response) {
     //estou pegando os dados que vem do postman (do corpo da requisição)
     const { title, descriptions, tags, links } = request.body
-    const  user_id  = request.user_id
+    const  user_id  = request.user.id
 
     const [note_id] = await knex('notes').insert({ title, descriptions, user_id })
 
